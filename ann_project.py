@@ -82,7 +82,6 @@ class FlexibleANN:
             z = mat_add_bias(mat_mul(acts[-1], W), b)
             if i == len(self.layers) - 1:
                 if regression:
-                    # Son katmanda regression için linear aktivasyon (yani hiçbiri)
                     a = z
                 else:
                     a = softmax_matrix(z)

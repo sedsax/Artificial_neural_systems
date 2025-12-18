@@ -1,10 +1,7 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
 import math
 import random
 import struct
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import time
 
 # =====================================================
 # MNIST LOADER (NO NUMPY)
@@ -58,7 +55,7 @@ def tanh_derivative_matrix(A):
     return [[1-x*x for x in row] for row in A]
 
 # =====================================================
-# SOFTMAX + LOSS
+# SOFTMAX
 # =====================================================
 
 def softmax(row):
@@ -68,14 +65,6 @@ def softmax(row):
 
 def softmax_matrix(A):
     return [softmax(row) for row in A]
-
-def cross_entropy(pred, target):
-    eps = 1e-9
-    loss = 0
-    for i in range(len(pred)):
-        for j in range(len(pred[0])):
-            loss -= target[i][j]*math.log(pred[i][j]+eps)
-    return loss/len(pred)
 
 def argmax_row(row):
     return max(range(len(row)), key=lambda i: row[i])
@@ -159,8 +148,15 @@ class FlexibleANN:
                         delta = [[delta[r][c]*deriv[r][c]
                                   for c in range(len(delta[0]))]
                                   for r in range(len(delta))]
-
             acts_full = self.forward(X)
+            
+            def cross_entropy(pred, target):
+                eps = 1e-9
+                loss = 0
+                for i in range(len(pred)):
+                    for j in range(len(pred[0])):
+                        loss -= target[i][j]*math.log(pred[i][j]+eps)
+                return loss/len(pred)
             loss = cross_entropy(acts_full[-1], y)
             print(f"Epoch {ep+1}/{epochs} completed | Loss: {loss:.4f}")
 
@@ -175,109 +171,76 @@ def evaluate(net, X, y_labels):
             correct += 1
     return correct / len(X)
 
-
-
 # =====================================================
-# MNIST TRAIN
+# SIMPLE CNN (PURE PYTHON)
 # =====================================================
 
-def train_mnist_model():
-    import time
-    start = time.time()
+def relu(x):
+    return max(0, x)
 
-    X_train = load_mnist_images("train-images.idx3-ubyte", limit=2000)
-    y_train_lbl = load_mnist_labels("train-labels.idx1-ubyte", limit=2000)
-    y_train = one_hot(y_train_lbl)
+def relu_deriv(x):
+    return 1 if x > 0 else 0
 
-    X_test = load_mnist_images("t10k-images.idx3-ubyte", limit=200)
-    y_test_lbl = load_mnist_labels("t10k-labels.idx1-ubyte", limit=200)
+def conv2d(image, kernel):
+    h, w = 28, 28
+    kh, kw = 3, 3
+    output = [[0]*(w-2) for _ in range(h-2)]
 
-    net = FlexibleANN([784, 64, 32, 10], lr=0.01, momentum=0.9)
-    net.train(X_train, y_train, epochs=50, batch_size=8)
-    acc = evaluate(net, X_test, y_test_lbl)
+    for i in range(h-2):
+        for j in range(w-2):
+            s = 0
+            for ki in range(kh):
+                for kj in range(kw):
+                    s += image[i+ki][j+kj] * kernel[ki][kj]
+            output[i][j] = relu(s)
+    return output
 
-    print("\nTest Accuracy:", round(acc*100, 2), "%")
-    print("Elapsed time:", round(time.time()-start, 2), "seconds")
+def maxpool2x2(feature):
+    h, w = len(feature), len(feature[0])
+    pooled = [[0]*(w//2) for _ in range(h//2)]
 
-    return net
+    for i in range(0, h, 2):
+        for j in range(0, w, 2):
+            pooled[i//2][j//2] = max(
+                feature[i][j],
+                feature[i+1][j],
+                feature[i][j+1],
+                feature[i+1][j+1]
+            )
+    return pooled
 
-# =====================================================
-# MNIST DRAW WINDOW
-# =====================================================
-
-class MNISTDrawWindow:
-    def __init__(self, net):
-        self.net = net
-        self.cell = 10
-        self.grid = [[0]*28 for _ in range(28)]
-
-        win = tk.Toplevel()
-        win.title("Draw MNIST Digit")
-
-        self.canvas = tk.Canvas(win, width=280, height=280, bg="black")
-        self.canvas.pack()
-
-        self.label = tk.Label(win, text="Draw a digit (0–9)", font=("Arial", 12))
-        self.label.pack()
-
-        tk.Button(win, text="Predict", command=self.predict).pack()
-        tk.Button(win, text="Clear", command=self.clear).pack()
-
-        self.canvas.bind("<B1-Motion>", self.draw)
-
-    def draw(self, e):
-        x, y = e.x // 10, e.y // 10
-
-        if 0 <= x < 28 and 0 <= y < 28:
-            # merkez piksel
-            self.grid[y][x] = 1.0
-        for dy in [-1, 0, 1]:
-            for dx in [-1, 0, 1]:
-                ny, nx = y + dy, x + dx
-                if 0 <= ny < 28 and 0 <= nx < 28:
-                    self.grid[ny][nx] = min(1.0, self.grid[ny][nx] + 0.1)
-
-        # canvas çizimi
-        self.canvas.create_rectangle(
-            x*10, y*10, (x+1)*10, (y+1)*10,
-            fill="white", outline="white"
-        )
-
-
-    def clear(self):
-        self.canvas.delete("all")
-        self.grid = [[0]*28 for _ in range(28)]
-
-    def predict(self):
-        inp = [v for row in self.grid for v in row]
-
-        m = max(inp)
-        if m > 0:
-            inp = [v/m for v in inp]
-
-        probs = self.net.forward([inp])[-1][0]
-        pred = argmax_row(probs)
-        self.label.config(
-            text=f"Prediction: {pred}  (conf={round(max(probs),2)})"
-        )
+def flatten(feature):
+    return [x for row in feature for x in row]
 
 # =====================================================
-# MAIN GUI
+# TRAIN WITH CNN FEATURE EXTRACTION
 # =====================================================
 
-class ANNVisualizer:
-    def __init__(self, root):
-        self.root = root
-        root.title("ANN Visualizer + MNIST")
+kernel = [[random.uniform(-0.1, 0.1) for _ in range(3)] for _ in range(3)]
 
-        self.mnist_net = train_mnist_model()
+def extract_features(img_flat):
+    img = [img_flat[i*28:(i+1)*28] for i in range(28)]
+    conv = conv2d(img, kernel)
+    pool = maxpool2x2(conv)
+    return flatten(pool)
 
-        tk.Button(root, text="Draw MNIST Digit",
-                  command=lambda: MNISTDrawWindow(self.mnist_net)).pack(pady=20)
+start = time.time()
 
-# =====================================================
+X_train_raw = load_mnist_images("train-images.idx3-ubyte", limit=1000)
+y_train_lbl = load_mnist_labels("train-labels.idx1-ubyte", limit=1000)
+y_train = one_hot(y_train_lbl)
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    ANNVisualizer(root)
-    root.mainloop()
+X_train = [extract_features(x) for x in X_train_raw]
+
+X_test_raw = load_mnist_images("t10k-images.idx3-ubyte", limit=200)
+y_test_lbl = load_mnist_labels("t10k-labels.idx1-ubyte", limit=200)
+
+X_test = [extract_features(x) for x in X_test_raw]
+
+net = FlexibleANN([169, 64, 32, 10], lr=0.01, momentum=0.9)
+net.train(X_train, y_train, epochs=50, batch_size=8)
+
+acc = evaluate(net, X_test, y_test_lbl)
+
+print("\nTest Accuracy:", round(acc*100, 2), "%")
+print("Elapsed time:", round(time.time()-start, 2), "seconds")
