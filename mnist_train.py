@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # =====================================================
-# MNIST LOADER (NO NUMPY)
+# MNIST LOADER 
 # =====================================================
 
 def load_mnist_images(path, limit=None):
@@ -33,7 +33,7 @@ def one_hot(labels, C=10):
     return y
 
 # =====================================================
-# MATRIX OPS (NO NUMPY)
+# MATRIX 
 # =====================================================
 
 def mat_mul(A, B):
@@ -81,7 +81,7 @@ def argmax_row(row):
     return max(range(len(row)), key=lambda i: row[i])
 
 # =====================================================
-# FLEXIBLE ANN (FIXED)
+# FLEXIBLE ANN 
 # =====================================================
 
 class FlexibleANN:
@@ -229,7 +229,6 @@ class MNISTDrawWindow:
         x, y = e.x // 10, e.y // 10
 
         if 0 <= x < 28 and 0 <= y < 28:
-            # merkez piksel
             self.grid[y][x] = 1.0
         for dy in [-1, 0, 1]:
             for dx in [-1, 0, 1]:
@@ -237,7 +236,6 @@ class MNISTDrawWindow:
                 if 0 <= ny < 28 and 0 <= nx < 28:
                     self.grid[ny][nx] = min(1.0, self.grid[ny][nx] + 0.1)
 
-        # canvas çizimi
         self.canvas.create_rectangle(
             x*10, y*10, (x+1)*10, (y+1)*10,
             fill="white", outline="white"

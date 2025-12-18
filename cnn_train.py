@@ -4,7 +4,7 @@ import struct
 import time
 
 # =====================================================
-# MNIST LOADER (NO NUMPY)
+# MNIST LOADER 
 # =====================================================
 
 def load_mnist_images(path, limit=None):
@@ -30,7 +30,7 @@ def one_hot(labels, C=10):
     return y
 
 # =====================================================
-# MATRIX OPS (NO NUMPY)
+# MATRIX 
 # =====================================================
 
 def mat_mul(A, B):
@@ -70,7 +70,7 @@ def argmax_row(row):
     return max(range(len(row)), key=lambda i: row[i])
 
 # =====================================================
-# FLEXIBLE ANN (FIXED)
+# FLEXIBLE ANN 
 # =====================================================
 
 class FlexibleANN:
@@ -84,7 +84,6 @@ class FlexibleANN:
             in_dim = layer_sizes[i]
             out_dim = layer_sizes[i+1]
 
-            # Xavier initialization
             limit = math.sqrt(6 / (in_dim + out_dim))
             W = [[random.uniform(-limit, limit)
                   for _ in range(out_dim)]
@@ -149,7 +148,7 @@ class FlexibleANN:
                                   for c in range(len(delta[0]))]
                                   for r in range(len(delta))]
             acts_full = self.forward(X)
-            
+
             def cross_entropy(pred, target):
                 eps = 1e-9
                 loss = 0
@@ -172,7 +171,7 @@ def evaluate(net, X, y_labels):
     return correct / len(X)
 
 # =====================================================
-# SIMPLE CNN (PURE PYTHON)
+# SIMPLE CNN 
 # =====================================================
 
 def relu(x):
@@ -226,8 +225,8 @@ def extract_features(img_flat):
 
 start = time.time()
 
-X_train_raw = load_mnist_images("train-images.idx3-ubyte", limit=1000)
-y_train_lbl = load_mnist_labels("train-labels.idx1-ubyte", limit=1000)
+X_train_raw = load_mnist_images("train-images.idx3-ubyte", limit=2000)
+y_train_lbl = load_mnist_labels("train-labels.idx1-ubyte", limit=2000)
 y_train = one_hot(y_train_lbl)
 
 X_train = [extract_features(x) for x in X_train_raw]

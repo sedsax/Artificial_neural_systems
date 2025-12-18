@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # =====================================================
-# MATRIX OPS (NO NUMPY)
+# MATRIX OPS 
 # =====================================================
 
 def mat_mul(A, B):
@@ -149,14 +149,12 @@ class ANNVisualizer:
         left = tk.Frame(self.root)
         left.pack(side=tk.LEFT, padx=10)
 
-        # Problem type selection
         tk.Label(left, text="Problem type").pack(pady=(10,0))
         self.problem_type = tk.StringVar(value="Classification")
         self.problem_type_box = ttk.Combobox(left, textvariable=self.problem_type, values=["Classification", "Regression"], width=14, state="readonly")
         self.problem_type_box.pack()
         self.problem_type.trace_add('write', self.on_problem_type_change)
 
-        # Class selection
         tk.Label(left,text="Classes").pack()
         self.class_count = tk.IntVar(value=2)
         self.class_box = ttk.Combobox(left,textvariable=self.class_count,
@@ -170,7 +168,6 @@ class ANNVisualizer:
         self.class_select.pack()
         self.update_class_list()
 
-        # Layer type selection
         tk.Label(left, text="Layer type").pack(pady=(10,0))
         self.layer_type = tk.StringVar(value="Multi")
         self.layer_type_box = ttk.Combobox(left, textvariable=self.layer_type, values=["Single", "Multi"], width=8, state="readonly")
@@ -213,7 +210,6 @@ class ANNVisualizer:
         self.canvas = FigureCanvasTkAgg(self.fig,master=self.root)
         self.canvas.get_tk_widget().pack(side=tk.RIGHT,fill=tk.BOTH,expand=True)
 
-        # Ensure click event is connected
         self.canvas.mpl_connect("button_press_event", self.on_click)
     def on_problem_type_change(self, *args):
         if self.problem_type.get() == "Regression":
@@ -244,7 +240,6 @@ class ANNVisualizer:
             self.hidden_neurons_entry.config(state='normal')
             self.hidden_neurons_label.config(state='normal')
         
-        # No need to call self.canvas.mpl_connect here
 
     def update_class_list(self, *_):
         C = self.class_count.get()
