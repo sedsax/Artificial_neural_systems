@@ -85,6 +85,15 @@ def argmax_row(row):
 # =====================================================
 
 class FlexibleANN:
+    def save_weights(self, filename):
+        import pickle
+        with open(filename, 'wb') as f:
+            pickle.dump(self.layers, f)
+
+    def load_weights(self, filename):
+        import pickle
+        with open(filename, 'rb') as f:
+            self.layers = pickle.load(f)
     def __init__(self, layer_sizes, lr=0.01, momentum=0.9):
         self.lr = lr
         self.momentum = momentum
@@ -199,6 +208,9 @@ def train_mnist_model():
     print("\nTest Accuracy:", round(acc*100, 2), "%")
     print("Elapsed time:", round(time.time()-start, 2), "seconds")
 
+    # Eğitimden sonra ağırlıkları kaydet
+    net.save_weights("mnist_ann_weights.pkl")
+
     return net
 
 # =====================================================
@@ -268,7 +280,14 @@ class ANNVisualizer:
         self.root = root
         root.title("ANN Visualizer + MNIST")
 
-        self.mnist_net = train_mnist_model()
+        import os
+        weights_file = "mnist_ann_weights.pkl"
+        if os.path.exists(weights_file):
+            print("Ağırlık dosyası bulundu, yükleniyor...")
+            self.mnist_net = FlexibleANN([784, 64, 32, 10], lr=0.01, momentum=0.9)
+            self.mnist_net.load_weights(weights_file)
+        else:
+            self.mnist_net = train_mnist_model()
 
         tk.Button(root, text="Draw MNIST Digit",
                   command=lambda: MNISTDrawWindow(self.mnist_net)).pack(pady=20)
